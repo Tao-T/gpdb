@@ -2,10 +2,19 @@
 # with --with--lvm. I don't undertand what's going on, but I found this
 # cure at https://github.com/rdkit/rdkit/issues/2192. Seems to be the
 # same issue, whatever it is.
-COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -emit-llvm -c
+#COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -emit-llvm -c
 %.bc : %.cpp
 	$(COMPILE.cxx.bc) -o $@ $<
 	$(LLVM_BINPATH)/opt -module-summary -f $@ -o $@
+ifndef COMPILE.cxx.bc
+
+$(error COMPILE.cxx.bc is not defined in makefile)
+
+else
+
+COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -emit-llvm -c -std=c++14
+
+endif
 
 override CPPFLAGS := -I$(top_srcdir)/src/backend/gporca/libgpos/include $(CPPFLAGS)
 override CPPFLAGS := -I$(top_srcdir)/src/backend/gporca/libgpopt/include $(CPPFLAGS)
