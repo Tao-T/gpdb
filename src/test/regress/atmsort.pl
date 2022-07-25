@@ -343,6 +343,7 @@ my $help = 0;
 my $ignore_plans;
 my @init_file;
 my $verbose;
+my $debug;
 my $orderwarn;
 
 GetOptions(
@@ -351,6 +352,7 @@ GetOptions(
     'gpd_init|gp_init|init:s' => \@init_file,
     'order_warn|orderwarn' => \$orderwarn,
     'verbose' => \$verbose,
+    'debug' => \$debug,
     'version|v' => \&print_version
     )
     or lazy_pod2usage(2);
@@ -367,6 +369,7 @@ $args{IGNORE_PLANS} = $ignore_plans if (defined ($ignore_plans));
 @{$args{INIT_FILES}} = @init_file if (scalar(@init_file));
 $args{ORDER_WARN} = $orderwarn if (defined ($orderwarn));
 $args{VERBOSE} = $verbose if (defined ($verbose));
+$args{DEBUG} = $debug if (defined ($debug));
 
 atmsort::atmsort_init(%args);
 
