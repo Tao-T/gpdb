@@ -706,6 +706,8 @@ extern int	gp_autostats_on_change_threshold;
 extern bool	gp_autostats_allow_nonowner;
 extern bool	log_autostats;
 
+extern bool     gp_enable_mute_jit_explain;
+
 
 /* --------------------------------------------------------------------------------------------------
  * Server debugging

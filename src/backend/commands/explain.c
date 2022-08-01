@@ -46,6 +46,7 @@
 #include "utils/xml.h"
 
 #include "cdb/cdbgang.h"
+#include "cdb/cdbvars.h"
 #include "optimizer/tlist.h"
 #include "optimizer/optimizer.h"
 
@@ -1057,6 +1058,9 @@ ExplainPrintJIT(ExplainState *es, int jit_flags,
 
 	/* don't print information if no JITing happened */
 	if (!ji || ji->created_functions == 0)
+		return;
+
+	if (gp_enable_mute_jit_explain)
 		return;
 
 	/* calculate total time */

@@ -323,6 +323,9 @@ int			gp_autostats_on_change_threshold = 100000;
 bool		gp_autostats_allow_nonowner = false;
 bool		log_autostats = true;
 
+/* hotfix of gpdiff failure: * mute output of explain about JIT */
+bool            gp_enable_mute_jit_explain = false;
+
 /* --------------------------------------------------------------------------------------------------
  * Server debugging
  */
