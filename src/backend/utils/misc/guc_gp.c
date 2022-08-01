@@ -749,6 +749,17 @@ struct config_bool ConfigureNamesBool_gp[] =
 	},
 
 	{
+		{"gp_enable_mute_jit_explain", PGC_USERSET, DEVELOPER_OPTIONS,
+			gettext_noop("Enable mute output of explain about JIT"),
+			NULL,
+			GUC_NO_RESET_ALL | GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE
+		},
+		&gp_enable_mute_jit_explain,
+		false,
+		NULL, NULL, NULL
+	},
+
+	{
 		{"gp_enable_motion_deadlock_sanity", PGC_USERSET, DEVELOPER_OPTIONS,
 			gettext_noop("Enable verbose check at planning time."),
 			NULL,

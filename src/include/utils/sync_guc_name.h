@@ -18,6 +18,7 @@
 		"gp_debug_linger",
 		"gp_default_storage_options",
 		"gp_disable_tuple_hints",
+		"gp_enable_mute_jit_explain",
 		"gp_enable_segment_copy_checking",
 		"gp_external_enable_filter_pushdown",
 		"gp_hashagg_default_nbatches",
