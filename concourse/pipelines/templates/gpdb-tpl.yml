@@ -232,6 +232,7 @@ groups:
 {% endif %}
 {% if "rhel8" in os_types %}
   - icw_gporca_rhel8
+  - icw_jit_rhel8
   - icw_planner_rhel8
   - icw_gporca_icproxy_rhel8
   - icw_planner_icproxy_rhel8
@@ -361,6 +362,7 @@ groups:
 {% endif %}
 {% if "rhel8" in os_types %}
   - icw_gporca_rhel8
+  - icw_jit_rhel8
   - icw_planner_rhel8
   - icw_gporca_icproxy_rhel8
   - icw_planner_icproxy_rhel8
@@ -942,7 +944,7 @@ jobs:
     image: gpdb7-rhel8-build
     file: gpdb_src/concourse/tasks/compile_gpdb.yml
     params:
-      CONFIGURE_FLAGS: ((configure_flags_with_extensions))
+      CONFIGURE_FLAGS: ((configure_flags_with_jit_extensions))
       BLD_TARGETS: "clients"
       RC_BUILD_TYPE_GCS: ((rc-build-type-gcs))
   - in_parallel:
@@ -1253,7 +1255,30 @@ jobs:
     image: gpdb7-rhel8-test
     timeout: 24h
     params:
-      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=on' installcheck-world
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=on -c jit=off' installcheck-world
+      TEST_OS: centos
+      CONFIGURE_FLAGS: ((configure_flags))
+
+- name: icw_jit_rhel8
+  plan:
+  - in_parallel:
+      steps:
+      - get: gpdb_src
+        passed: [compile_gpdb_rhel8]
+      - get: bin_gpdb
+        resource: bin_gpdb_rhel8
+        passed: [compile_gpdb_rhel8]
+        trigger: [[ test_trigger ]]
+      - get: gpdb7-rhel8-test
+  - task: ic_gpdb
+    {% if use_ICW_workers %}
+    tags: [icw-rhel8]
+    {% endif %}
+    file: gpdb_src/concourse/tasks/ic_gpdb.yml
+    image: gpdb7-rhel8-test
+    timeout: 24h
+    params:
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=off -c jit=on -c jit_above_cost=0 -c gp_enable_mute_jit_explain=on' installcheck-world
       TEST_OS: centos
       CONFIGURE_FLAGS: ((configure_flags))
 
@@ -1276,7 +1301,7 @@ jobs:
     image: gpdb7-rhel8-test
     timeout: 24h
     params:
-      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=off' installcheck-world
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=off -c jit=off' installcheck-world
       TEST_OS: centos
       TEST_BINARY_SWAP: ((test-binary-swap))
       CONFIGURE_FLAGS: ((configure_flags))
@@ -1304,7 +1329,7 @@ jobs:
     image: gpdb7-rhel8-test
     timeout: 24h
     params:
-      MAKE_TEST_COMMAND: -k PGOPTIONS='-c gp_interconnect_type=proxy -c optimizer=on' installcheck-world
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c gp_interconnect_type=proxy -c optimizer=on -c jit=off' installcheck-world
       TEST_OS: centos
       CONFIGURE_FLAGS: ((configure_flags))
 
@@ -1327,7 +1352,7 @@ jobs:
     image: gpdb7-rhel8-test
     timeout: 24h
     params:
-      MAKE_TEST_COMMAND: -k PGOPTIONS='-c gp_interconnect_type=proxy -c optimizer=off' installcheck-world
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c gp_interconnect_type=proxy -c optimizer=off -c jit=off' installcheck-world
       TEST_OS: centos
       CONFIGURE_FLAGS: ((configure_flags))
 
@@ -1350,7 +1375,7 @@ jobs:
     image: gpdb7-rhel8-test
     timeout: 24h
     params:
-      MAKE_TEST_COMMAND: -k PGOPTIONS='-c gp_interconnect_type=tcp -c optimizer=on' installcheck-world
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c gp_interconnect_type=tcp -c optimizer=on -c jit=off' installcheck-world
       TEST_OS: centos
 
 - name: icw_mirrorless_rhel8
@@ -1370,7 +1395,7 @@ jobs:
     image: gpdb7-rhel8-test
     timeout: 24h
     params:
-      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=on' installcheck-mirrorless
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=on -c jit=on -c gp_enable_mute_jit_explain=on' installcheck-mirrorless
       TEST_OS: centos
       CONFIGURE_FLAGS: ((configure_flags))
       WITH_MIRRORS: false
@@ -1545,6 +1570,7 @@ jobs:
       - get: bin_gpdb_rhel8
         passed:
         - icw_gporca_rhel8
+        - icw_jit_rhel8
         - icw_planner_rhel8
         - icw_gporca_icproxy_rhel8
         - icw_planner_icproxy_rhel8
@@ -1571,6 +1597,7 @@ jobs:
 {% endif %}
 {% if "rhel8" in os_types %}
         - icw_gporca_rhel8
+        - icw_jit_rhel8
         - icw_planner_rhel8
         - icw_gporca_icproxy_rhel8
         - icw_planner_icproxy_rhel8
@@ -1630,7 +1657,7 @@ jobs:
     file: gpdb_src/concourse/tasks/ic_gpdb.yml
     image: gpdb7-rhel8-test
     params:
-      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=off'
+      MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=off -c jit=off'
         BUILD_TYPE=((rc-build-type)) -C src/test/regress installcheck-icudp
       TEST_OS: centos
 {% endif %}
@@ -2506,6 +2533,7 @@ jobs:
         - resource_group_centos7
         - interconnect_centos7
         - icw_gporca_rhel8
+        - icw_jit_rhel8
         - icw_planner_rhel8
         - icw_gporca_icproxy_rhel8
         - icw_planner_icproxy_rhel8
@@ -2569,6 +2597,7 @@ jobs:
         - compile_gpdb_rhel8
         - icw_planner_rhel8
         - icw_gporca_rhel8
+        - icw_jit_rhel8
         - icw_gporca_icproxy_rhel8
         - icw_planner_icproxy_rhel8
         - icw_gporca_ictcp_rhel8

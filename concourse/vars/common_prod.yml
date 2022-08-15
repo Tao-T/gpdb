@@ -26,6 +26,7 @@ reduced-frequency-trigger-flag: false
 gpdb_src-trigger-flag: true
 configure_flags: "--enable-cassert --enable-tap-tests"
 configure_flags_with_extensions: "--enable-cassert --enable-tap-tests --enable-debug-extensions"
+configure_flags_with_jit_extensions: "--enable-cassert --enable-tap-tests --with-llvm --enable-debug-extensions"
 use_ccache: true
 ########## Compile gpdb clients on windows #############
 remote_win_host_build: 10.0.42.5

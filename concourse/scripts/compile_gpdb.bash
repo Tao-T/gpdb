@@ -98,6 +98,16 @@ function include_dependencies() {
 		for path in "${header_search_path[@]}"; do if [[ -d "${path}" ]]; then for header in "${vendored_headers[@]}"; do find -L $path -name $header -exec cp -avn '{}' ${GREENPLUM_INSTALL_DIR}/include \;; done; fi; done
 	fi
 
+	# JIT related libraries
+	# If llvm is used
+	if [[ "$CONFIGURE_FLAGS" =~ "--with-llvm" ]];then
+		local llvm_config=${LLVM_CONFIG:-llvm-config}
+		local extlibs=$(${llvm_config} --libfiles orcjit)
+		for extlib in $extlibs;do
+			cp -avn "$extlib" ${GREENPLUM_INSTALL_DIR}/lib
+		done
+	fi
+
 	# Vendor shared libraries - follow symlinks
 	for path in "${library_search_path[@]}"; do if [[ -d "${path}" ]]; then for lib in "${vendored_libs[@]}"; do find -L $path -name $lib -exec cp -avn '{}' ${GREENPLUM_INSTALL_DIR}/lib \;; done; fi; done
 	# vendor pkgconfig files

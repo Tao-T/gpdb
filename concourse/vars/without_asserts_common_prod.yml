@@ -9,3 +9,4 @@ reduced-frequency-trigger-flag: true
 gpdb_src-trigger-flag: false
 configure_flags: "--enable-tap-tests"
 configure_flags_with_extensions: "--enable-tap-tests --enable-debug-extensions"
+configure_flags_with_jit_extensions: "--enable-tap-tests --with-llvm --enable-debug-extensions"
