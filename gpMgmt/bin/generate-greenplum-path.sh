@@ -28,8 +28,8 @@ EOF
 
 cat <<"EOF"
 PYTHONPATH="${GPHOME}/lib/python"
-PATH="/opt/rh/llvm-toolset-7/root/usr/bin:/opt/rh/llvm-toolset-7/root/usr/sbin:${GPHOME}/bin:${PATH}"
-LD_LIBRARY_PATH="/opt/rh/llvm-toolset-7/root/usr/lib64:${GPHOME}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+PATH="${GPHOME}/bin:${PATH}"
+LD_LIBRARY_PATH="${GPHOME}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 if [ -e "${GPHOME}/etc/openssl.cnf" ]; then
 	OPENSSL_CONF="${GPHOME}/etc/openssl.cnf"
