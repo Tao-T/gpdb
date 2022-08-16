@@ -112,7 +112,7 @@ fatal_system_new_handler(void)
 {
 	ereport(FATAL,
 			(errcode(ERRCODE_OUT_OF_MEMORY),
-			 errmsg("out of memory"),
+			 errmsg("JIT: out of memory"),
 			 errdetail("while in LLVM")));
 }
 
@@ -124,7 +124,7 @@ fatal_llvm_new_handler(void *user_data,
 {
 	ereport(FATAL,
 			(errcode(ERRCODE_OUT_OF_MEMORY),
-			 errmsg("out of memory"),
+			 errmsg("JIT: out of memory"),
 			 errdetail("While in LLVM: %s", reason.c_str())));
 }
 #endif
@@ -136,6 +136,6 @@ fatal_llvm_error_handler(void *user_data,
 {
 	ereport(FATAL,
 			(errcode(ERRCODE_OUT_OF_MEMORY),
-			 errmsg("fatal llvm error: %s",
+			 errmsg("JIT: fatal llvm error: %s",
 					reason.c_str())));
 }

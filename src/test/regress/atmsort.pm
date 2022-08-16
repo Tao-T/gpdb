@@ -231,6 +231,14 @@ s/\s+\(seg.*pid.*\)//
 m/^(?:ERROR|WARNING|CONTEXT|NOTICE):.*connection.*failed.*(?:http|gpfdist)/
 s/connection.*failed.*(http|gpfdist).*/connection failed dummy_protocol\:\/\/DUMMY_LOCATION/
 
+# convert QUERY PLAN header to a fixed-width format. The width of header
+# SHOULD NOT be taken into account when compared with the expected one
+m/^\s+QUERY PLAN\s*$/
+s/^\s+QUERY PLAN\s*$/ QUERY PLAN \n/
+
+m/^------------+\s*$/
+s/^------------+\s*$/------------\n/
+
 # the EOF ends the HERE document
 EOF_matchsubs
 
