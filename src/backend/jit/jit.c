@@ -51,7 +51,6 @@ static bool provider_failed_loading = false;
 static bool provider_init(void);
 static bool file_exists(const char *name);
 
-
 /*
  * SQL level function returning whether JIT is available in the current
  * backend. Will attempt to load JIT provider if necessary.
@@ -92,10 +91,10 @@ provider_init(void)
 	 * because that'd error out in case the shlib isn't available.
 	 */
 	snprintf(path, MAXPGPATH, "%s/%s%s", pkglib_path, jit_provider, DLSUFFIX);
-	elog(DEBUG1, "probing availability of JIT provider at %s", path);
+	jit_elog(DEBUG1, "probing availability of JIT provider at %s", path);
 	if (!file_exists(path))
 	{
-		elog(DEBUG1,
+		jit_elog(DEBUG1,
 			 "provider not available, disabling JIT for current session");
 		provider_failed_loading = true;
 		return false;
@@ -118,7 +117,7 @@ provider_init(void)
 	provider_successfully_loaded = true;
 	provider_failed_loading = false;
 
-	elog(DEBUG1, "successfully loaded JIT provider in current session");
+	jit_elog(DEBUG1, "successfully loaded JIT provider in current session");
 
 	return true;
 }
@@ -205,7 +204,7 @@ file_exists(const char *name)
 	else if (!(errno == ENOENT || errno == ENOTDIR))
 		ereport(ERROR,
 				(errcode_for_file_access(),
-				 errmsg("could not access file \"%s\": %m", name)));
+				 errmsg("JIT: could not access file \"%s\": %m", name)));
 
 	return false;
 }

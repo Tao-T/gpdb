@@ -143,4 +143,8 @@ s/\(dbsize\.c:\d+\)/\(dbsize\.c:XXX\)/
 m/ \(cdbdisp_async\.c.*\)/
 s/ \(cdbdisp_async\.c.*\)//
 
+# remove debug message of JIT
+m/DEBUG:\s+JIT/
+s/.//gs
+
 -- end_matchsubs

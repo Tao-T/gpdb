@@ -101,5 +101,7 @@ extern void jit_release_context(JitContext *context);
 extern bool jit_compile_expr(struct ExprState *state);
 extern void InstrJitAgg(JitInstrumentation *dst, JitInstrumentation *add);
 
+#define jit_elog(elevel, fmt, ...) elog(elevel, "JIT: " fmt, ##__VA_ARGS__)
+
 
 #endif							/* JIT_H */
