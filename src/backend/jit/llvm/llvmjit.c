@@ -39,7 +39,6 @@
 #include <llvm-c/Transforms/Utils.h>
 #endif
 
-
 /* Handle of a module emitted via ORC JIT */
 typedef struct LLVMJitHandle
 {
@@ -274,7 +273,7 @@ llvm_get_function(LLVMJitContext *context, const char *funcname)
 
 		addr = 0;
 		if (LLVMOrcGetSymbolAddressIn(handle->stack, &addr, handle->orc_handle, funcname))
-			elog(ERROR, "failed to look up symbol \"%s\"", funcname);
+			jit_elog(ERROR, "failed to look up symbol \"%s\"", funcname);
 		if (addr)
 			return (void *) (uintptr_t) addr;
 	}
@@ -288,18 +287,18 @@ llvm_get_function(LLVMJitContext *context, const char *funcname)
 		return (void *) (uintptr_t) addr;
 #else
 	if (LLVMOrcGetSymbolAddress(llvm_opt0_orc, &addr, funcname))
-		elog(ERROR, "failed to look up symbol \"%s\"", funcname);
+		jit_elog(ERROR, "failed to look up symbol \"%s\"", funcname);
 	if (addr)
 		return (void *) (uintptr_t) addr;
 	if (LLVMOrcGetSymbolAddress(llvm_opt3_orc, &addr, funcname))
-		elog(ERROR, "failed to look up symbol \"%s\"", funcname);
+		jit_elog(ERROR, "failed to look up symbol \"%s\"", funcname);
 	if (addr)
 		return (void *) (uintptr_t) addr;
 #endif							/* LLVM_VERSION_MAJOR */
 
 #endif							/* HAVE_DECL_LLVMORCGETSYMBOLADDRESSIN */
 
-	elog(ERROR, "failed to JIT: %s", funcname);
+	jit_elog(ERROR, "failed to JIT: %s", funcname);
 
 	return NULL;
 }
@@ -553,7 +552,7 @@ llvm_compile_module(LLVMJitContext *context)
 		if (LLVMOrcAddEagerlyCompiledIR(compile_orc, &orc_handle, context->module,
 										llvm_resolve_symbol, NULL))
 		{
-			elog(ERROR, "failed to JIT module");
+			jit_elog(ERROR, "failed to JIT module");
 		}
 
 		/* LLVMOrcAddEagerlyCompiledIR takes ownership of the module */
@@ -566,7 +565,7 @@ llvm_compile_module(LLVMJitContext *context)
 		if (LLVMOrcAddEagerlyCompiledIR(compile_orc, &orc_handle, smod,
 										llvm_resolve_symbol, NULL))
 		{
-			elog(ERROR, "failed to JIT module");
+			jit_elog(ERROR, "failed to JIT module");
 		}
 		LLVMOrcDisposeSharedModuleRef(smod);
 	}
@@ -598,7 +597,7 @@ llvm_compile_module(LLVMJitContext *context)
 	MemoryContextSwitchTo(oldcontext);
 
 	ereport(DEBUG1,
-			(errmsg("time to inline: %.3fs, opt: %.3fs, emit: %.3fs",
+			(errmsg("JIT: time to inline: %.3fs, opt: %.3fs, emit: %.3fs",
 					INSTR_TIME_GET_DOUBLE(context->base.instr.inlining_counter),
 					INSTR_TIME_GET_DOUBLE(context->base.instr.optimization_counter),
 					INSTR_TIME_GET_DOUBLE(context->base.instr.emission_counter)),
@@ -634,7 +633,7 @@ llvm_session_initialize(void)
 
 	if (LLVMGetTargetFromTriple(llvm_triple, &llvm_targetref, &error) != 0)
 	{
-		elog(FATAL, "failed to query triple %s\n", error);
+		jit_elog(FATAL, "failed to query triple %s\n", error);
 	}
 
 	/*
@@ -645,7 +644,7 @@ llvm_session_initialize(void)
 	 */
 	cpu = LLVMGetHostCPUName();
 	features = LLVMGetHostCPUFeatures();
-	elog(DEBUG2, "LLVMJIT detected CPU \"%s\", with features \"%s\"",
+	jit_elog(DEBUG2, "LLVMJIT detected CPU \"%s\", with features \"%s\"",
 		 cpu, features);
 
 	llvm_opt0_targetmachine =
@@ -732,7 +731,7 @@ load_type(LLVMModuleRef mod, const char *name)
 	/* this'll return a *pointer* to the global */
 	value = LLVMGetNamedGlobal(mod, name);
 	if (!value)
-		elog(ERROR, "type %s is unknown", name);
+		jit_elog(ERROR, "type %s is unknown", name);
 
 	/* therefore look at the contained type and return that */
 	typ = LLVMTypeOf(value);
@@ -752,7 +751,7 @@ load_return_type(LLVMModuleRef mod, const char *name)
 	/* this'll return a *pointer* to the function */
 	value = LLVMGetNamedFunction(mod, name);
 	if (!value)
-		elog(ERROR, "function %s is unknown", name);
+		jit_elog(ERROR, "function %s is unknown", name);
 
 	/* get type of function pointer */
 	typ = LLVMTypeOf(value);
@@ -786,14 +785,14 @@ llvm_create_types(void)
 	/* open file */
 	if (LLVMCreateMemoryBufferWithContentsOfFile(path, &buf, &msg))
 	{
-		elog(ERROR, "LLVMCreateMemoryBufferWithContentsOfFile(%s) failed: %s",
+		jit_elog(ERROR, "LLVMCreateMemoryBufferWithContentsOfFile(%s) failed: %s",
 			 path, msg);
 	}
 
 	/* eagerly load contents, going to need it all */
 	if (LLVMParseBitcode2(buf, &mod))
 	{
-		elog(ERROR, "LLVMParseBitcode2 of %s failed", path);
+		jit_elog(ERROR, "LLVMParseBitcode2 of %s failed", path);
 	}
 	LLVMDisposeMemoryBuffer(buf);
 
@@ -893,7 +892,7 @@ llvm_resolve_symbol(const char *symname, void *ctx)
 	 */
 #if defined(__darwin__)
 	if (symname[0] != '_')
-		elog(ERROR, "expected prefixed symbol name, but got \"%s\"", symname);
+		jit_elog(ERROR, "expected prefixed symbol name, but got \"%s\"", symname);
 	symname++;
 #endif
 
@@ -914,7 +913,7 @@ llvm_resolve_symbol(const char *symname, void *ctx)
 
 	/* let LLVM will error out - should never happen */
 	if (!addr)
-		elog(WARNING, "failed to resolve name %s", symname);
+		jit_elog(WARNING, "failed to resolve name %s", symname);
 
 	return (uint64_t) addr;
 }

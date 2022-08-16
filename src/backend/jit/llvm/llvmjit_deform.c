@@ -486,7 +486,7 @@ slot_compile_deform(LLVMJitContext *context, TupleDesc desc,
 			alignto = ALIGNOF_SHORT;
 		else
 		{
-			elog(ERROR, "unknown alignment");
+			jit_elog(ERROR, "unknown alignment");
 			alignto = 0;
 		}
 

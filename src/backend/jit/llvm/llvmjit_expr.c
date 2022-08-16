@@ -584,7 +584,7 @@ llvm_compile_expr(ExprState *state)
 
 					/* should make sure they're optimized beforehand */
 					if (op->d.func.nargs == 0)
-						elog(ERROR, "argumentless strict functions are pointless");
+						jit_elog(ERROR, "argumentless strict functions are pointless");
 
 					v_fcinfo =
 						l_ptr_const(fcinfo, l_ptr(StructFunctionCallInfoData));
