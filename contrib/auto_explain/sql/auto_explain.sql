@@ -29,10 +29,15 @@ SET auto_explain.log_min_duration = 1;
 SET auto_explain.log_triggers = FALSE;
 SET auto_explain.log_verbose = TRUE;
 
+-- avoid the compilation of JIT which can slow down the following query
+SET jit_above_cost = 100000;
+
 -- this select should not dump execution plan
 SELECT relname FROM pg_class WHERE relname='pg_class';
 -- this select should also dump plan, since it takes too much time to run
 SELECT count(*) FROM auto_explain_test.t1, auto_explain_test.t2;
+
+SET jit_above_cost TO DEFAULT;
 
 -- clean jobs
 DROP TABLE auto_explain_test.t1;
