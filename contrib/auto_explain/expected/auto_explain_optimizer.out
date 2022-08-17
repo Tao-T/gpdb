@@ -75,6 +75,9 @@ SET auto_explain.log_triggers = FALSE;
 LOG:  statement: SET auto_explain.log_triggers = FALSE;
 SET auto_explain.log_verbose = TRUE;
 LOG:  statement: SET auto_explain.log_verbose = TRUE;
+-- avoid the compilation of JIT which can slow down the following query
+SET jit_above_cost = 100000;
+LOG:  statement: SET jit_above_cost = 100000;
 -- this select should not dump execution plan
 SELECT relname FROM pg_class WHERE relname='pg_class';
 LOG:  statement: SELECT relname FROM pg_class WHERE relname='pg_class';
@@ -111,6 +114,8 @@ Memory used:  128000kB
  1002001
 (1 row)
 
+SET jit_above_cost TO DEFAULT;
+LOG:  statement: SET jit_above_cost TO DEFAULT;
 -- clean jobs
 DROP TABLE auto_explain_test.t1;
 LOG:  statement: DROP TABLE auto_explain_test.t1;
