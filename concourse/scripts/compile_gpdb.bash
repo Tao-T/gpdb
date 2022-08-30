@@ -127,6 +127,11 @@ function export_gpdb() {
 	chmod -R 755 .
 	# Remove python bytecode
 	find . -type f \( -iname \*.pyc -o -iname \*.pyo \) -delete
+	# TODO:
+	# Remove bitcode of external moudles (only for temp test, REMOVE IT LATER!!)
+	if [ -d lib/postgresql/bitcode ];then
+		rm -rf lib/postgresql/bitcode
+	fi
 	tar -czf "${TARBALL}" ./*
 	popd
 
