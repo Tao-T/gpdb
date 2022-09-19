@@ -229,8 +229,8 @@ endif
 ifeq ($(with_llvm), yes)
 install-bin: install-postgres-bitcode
 
-install-postgres-bitcode: $(OBJS) all
-	$(call install_llvm_module,postgres,$(call expand_subsys, $(filter-out $(top_builddir)/src/timezone/objfiles.txt, $(SUBDIROBJS))))
+install-postgres-bitcode: $(filter-out $(NOBITCODEOBJS),$(OBJS)) all
+	$(call install_llvm_module,postgres,$(call expand_subsys_bitcode, $(filter-out $(top_builddir)/src/timezone/bitcodefiles.txt, $(SUBDIRBITCODES))))
 endif
 
 install-bin: postgres $(POSTGRES_IMP) installdirs

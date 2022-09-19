@@ -3,18 +3,18 @@
 # cure at https://github.com/rdkit/rdkit/issues/2192. Seems to be the
 # same issue, whatever it is.
 # COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -emit-llvm -c
-%.bc : %.cpp
-	$(COMPILE.cxx.bc) -o $@ $<
-	$(LLVM_BINPATH)/opt -module-summary -f $@ -o $@
-ifndef COMPILE.cxx.bc
-
-$(error COMPILE.cxx.bc is not defined in makefile)
-
-else
-
-COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -emit-llvm -c -std=c++14
-
-endif
+#%.bc : %.cpp
+#	$(COMPILE.cxx.bc) -o $@ $<
+#	$(LLVM_BINPATH)/opt -module-summary -f $@ -o $@
+#ifndef COMPILE.cxx.bc
+#
+#$(error COMPILE.cxx.bc is not defined in makefile)
+#
+#else
+#
+#COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -emit-llvm -c -std=c++14
+#
+#endif
 
 override CPPFLAGS := -I$(top_srcdir)/src/backend/gporca/libgpos/include $(CPPFLAGS)
 override CPPFLAGS := -I$(top_srcdir)/src/backend/gporca/libgpopt/include $(CPPFLAGS)
@@ -23,3 +23,6 @@ override CPPFLAGS := -I$(top_srcdir)/src/backend/gporca/libgpdbcost/include $(CP
 # Do not omit frame pointer. Even with RELEASE builds, it is used for
 # backtracing.
 override CXXFLAGS := -Werror -Wextra -Wpedantic -fno-omit-frame-pointer $(CXXFLAGS)
+
+# orca is not accessed in JIT (executor stage), avoid the generation of .bc here
+BITCODES =
