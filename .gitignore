@@ -18,6 +18,7 @@
 *.mo
 *.pot
 objfiles.txt
+bitcodefiles.txt
 .deps/
 *.log
 *.gcno
