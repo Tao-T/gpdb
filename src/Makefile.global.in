@@ -1126,14 +1126,22 @@ COMPILE.c.bc = $(CLANG) -Wno-ignored-attributes $(BITCODE_CFLAGS) $(CPPFLAGS) -f
 endif
 
 ifndef COMPILE.cxx.bc
-COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -flto=thin -emit-llvm -c
+# NOTE: thinlto (-flto=thin option) is avoid in C++ bitcode generation.
+#
+# For code with instances of virutal funcitons, LLVM would generate a special
+# multi-module bitcode. However common bitcode-related APIs aim at single module
+# ones. This leads to failure when we create combined summary index.
+#
+# LLVM v8+ may have better controlling (e.g. opt -thinlto-split-lto-unit) and we
+# can try to improve the solution here in the future.
+COMPILE.cxx.bc = $(CLANG) -xc++ -Wno-ignored-attributes $(BITCODE_CXXFLAGS) $(CPPFLAGS) -emit-llvm -c
 endif
 
 %.bc : %.c
 	$(COMPILE.c.bc) -o $@ $<
 
 %.bc : %.cpp
-	$(COMPILE.cxx.bc) -o $@ $<
+	$(COMPILE.cxx.bc) -o - $< | $(LLVM_BINPATH)/opt -module-summary -o $@
 
 # Install LLVM bitcode module (for JITing).
 #
