@@ -703,7 +703,12 @@ ExplainOnePlan(PlannedStmt *plannedstmt, IntoClause *into, ExplainState *es,
 	 * at a later stage.
 	 */
 	if (es->costs)
-		ExplainPrintJITSummary(es, queryDesc);
+	{
+		if (queryDesc->estate->dispatcherState && queryDesc->estate->dispatcherState->primaryResults)
+			cdbexplain_printJITSummary(es, queryDesc);
+		else
+			ExplainPrintJITSummary(es,queryDesc);
+	}
 
 	/*
 	 * Close down the query and free resources.  Include time for this in the

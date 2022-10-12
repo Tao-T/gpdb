@@ -75,6 +75,8 @@ typedef struct CdbExplain_SliceWorker
 {
 	double		peakmemused;	/* bytes alloc in per-query mem context tree */
 	double		vmem_reserved;	/* vmem reserved by a QE */
+	int 		jit_flags;
+	JitInstrumentation ji;
 } CdbExplain_SliceWorker;
 
 
@@ -710,6 +712,9 @@ cdbexplain_collectSliceStats(PlanState *planstate,
 		(double) MemoryContextGetPeakSpace(estate->es_query_cxt);
 
 	out_worker->vmem_reserved = (double) VmemTracker_GetMaxReservedVmemBytes();
+
+	out_worker->jit_flags = estate->es_jit_flags;
+	out_worker->ji = estate->es_jit->instr;
 }								/* cdbexplain_collectSliceStats */
 
 
@@ -2209,4 +2214,196 @@ void ExplainParallelRetrieveCursor(ExplainState *es, QueryDesc* queryDesc)
 	}
 	ExplainPropertyText("Endpoint", endpointInfoStr.data, es);
 	ExplainCloseGroup("Cursor", "Cursor", true, es);
+}
+
+/*
+ * cdbexplain_printJITSummary -
+ *    Print summarized JIT instrumentation from all QEs
+ */
+void cdbexplain_printJITSummary(ExplainState *es, QueryDesc *queryDesc)
+{
+	CdbExplain_SliceSummary *ss;
+	CdbExplain_SliceWorker *ssw;
+	JitInstrumentation 		*ji;
+	instr_time		 total_time;
+	int jit_flags = queryDesc->estate->es_jit_flags;
+
+	if (gp_enable_mute_jit_explain || !(jit_flags & PGJIT_PERFORM))
+		return;
+
+	ExplainOpenGroup("JIT", "JIT", true, es);
+	es->indent += 1;
+	if (es->format == EXPLAIN_FORMAT_TEXT)
+	{
+		appendStringInfo(es->str, "JIT:\n");
+		appendStringInfoSpaces(es->str, es->indent * 2);
+		appendStringInfo(es->str, "Options: %s %s, %s %s, %s %s, %s %s\n",
+						 "Inlining", jit_flags & PGJIT_INLINE ? "true" : "false",
+						 "Optimization", jit_flags & PGJIT_OPT3 ? "true" : "false",
+						 "Expressions", jit_flags & PGJIT_EXPR ? "true" : "false",
+						 "Deforming", jit_flags & PGJIT_DEFORM ? "true" : "false");
+	}
+	else
+	{
+		ExplainOpenGroup("Options", "Options", true, es);
+		ExplainPropertyBool("Inlining", jit_flags & PGJIT_INLINE, es);
+		ExplainPropertyBool("Optimization", jit_flags & PGJIT_OPT3, es);
+		ExplainPropertyBool("Expressions", jit_flags & PGJIT_EXPR, es);
+		ExplainPropertyBool("Deforming", jit_flags & PGJIT_DEFORM, es);
+		ExplainCloseGroup("Options", "Options", true, es);
+	}
+
+	for (int slice_index = 0; slice_index < es->showstatctx->nslice; slice_index++)
+	{
+		ss = es->showstatctx->slices + slice_index;
+		appendStringInfoSpaces(es->str, es->indent * 2);
+		appendStringInfo(es->str, "(slice%d)\n", slice_index);
+		es->indent += 1;
+
+		if (ss->nworker == 1)
+		{
+			ssw = ss->workers;
+			ji = &ssw->ji;
+			INSTR_TIME_SET_ZERO(total_time);
+			INSTR_TIME_ADD(total_time, ji->generation_counter);
+			INSTR_TIME_ADD(total_time, ji->inlining_counter);
+			INSTR_TIME_ADD(total_time, ji->optimization_counter);
+			INSTR_TIME_ADD(total_time, ji->emission_counter);
+
+			if (es->format == EXPLAIN_FORMAT_TEXT)
+			{
+				appendStringInfoSpaces(es->str, es->indent * 2);
+				appendStringInfo(es->str, "Functions: \t%ld\n", ji->created_functions);
+			}
+			else
+			{
+				ExplainPropertyInteger("Functions", NULL, ji->created_functions, es);
+			}
+
+			if (es->analyze && es->timing)
+			{
+				if (es->format == EXPLAIN_FORMAT_TEXT)
+				{
+					appendStringInfoSpaces(es->str, es->indent * 2);
+					appendStringInfo(es->str,
+									 "Timing: \t%s %.3f ms, %s %.3f ms, %s %.3f ms, %s %.3f ms, %s %.3f ms\n",
+									 "Generation", 1000.0 * INSTR_TIME_GET_DOUBLE(ji->generation_counter),
+									 "Inlining", 1000.0 * INSTR_TIME_GET_DOUBLE(ji->inlining_counter),
+									 "Optimization", 1000.0 * INSTR_TIME_GET_DOUBLE(ji->optimization_counter),
+									 "Emission", 1000.0 * INSTR_TIME_GET_DOUBLE(ji->emission_counter),
+									 "Total", 1000.0 * INSTR_TIME_GET_DOUBLE(total_time));
+				}
+				else
+				{
+					ExplainOpenGroup("Timing", "Timing", true, es);
+
+					ExplainPropertyFloat("Generation", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->generation_counter),
+										 3, es);
+					ExplainPropertyFloat("Inlining", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->inlining_counter),
+										 3, es);
+					ExplainPropertyFloat("Optimization", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->optimization_counter),
+										 3, es);
+					ExplainPropertyFloat("Emission", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->emission_counter),
+										 3, es);
+					ExplainPropertyFloat("Total", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(total_time),
+										 3, es);
+
+					ExplainCloseGroup("Timing", "Timing", true, es);
+				}
+			}
+			es->indent -= 1;
+			continue;
+		}
+
+		if (es->format == EXPLAIN_FORMAT_TEXT)
+		{
+			appendStringInfoSpaces(es->str, es->indent * 2);
+			appendStringInfo(es->str, "Functions: \tseg_functions");
+		}
+		else
+			ExplainOpenGroup("Functions", "Functions", true, es);
+
+		for (int j = 0; j < ss->nworker; j++)
+		{
+			ssw = ss->workers + j;
+			ji = &ssw->ji;
+			if (es->format == EXPLAIN_FORMAT_TEXT)
+				appendStringInfo(es->str, "/seg%d_%ld", ss->segindex0 + j, ji->created_functions);
+			else
+			{
+				ExplainPropertyInteger("segment id", NULL, ss->segindex0 + j, es);
+				ExplainPropertyInteger("Functions", NULL, ji->created_functions, es);
+			}
+		}
+
+		if (es->format == EXPLAIN_FORMAT_TEXT)
+			appendStringInfo(es->str, "//end\n");
+		else
+			ExplainCloseGroup("Functions", "Functions", true, es);
+
+		if (es->analyze && es->timing)
+		{
+			if (es->format == EXPLAIN_FORMAT_TEXT)
+			{
+				appendStringInfoSpaces(es->str, es->indent * 2);
+				appendStringInfo(es->str, "Timing: \tseg_Generation_Inlining_Optimization_Emission_Total");
+			}
+			else
+				ExplainOpenGroup("Timing", "Timing", true, es);
+
+			for (int j = 0; j < ss->nworker; j++)
+			{
+				CdbExplain_SliceWorker *ssw = ss->workers + j;
+				JitInstrumentation *ji = &ssw->ji;
+				instr_time	total_time;
+				INSTR_TIME_SET_ZERO(total_time);
+				INSTR_TIME_ADD(total_time, ji->generation_counter);
+				INSTR_TIME_ADD(total_time, ji->inlining_counter);
+				INSTR_TIME_ADD(total_time, ji->optimization_counter);
+				INSTR_TIME_ADD(total_time, ji->emission_counter);
+
+				if (es->format == EXPLAIN_FORMAT_TEXT)
+					appendStringInfo(es->str, "/seg%d_%.3f ms_%.3f ms_%.3f ms_%.3f ms_%.3f ms",
+									 ss->segindex0 + j,
+									 1000.0 * INSTR_TIME_GET_DOUBLE(ji->generation_counter),
+									 1000.0 * INSTR_TIME_GET_DOUBLE(ji->inlining_counter),
+									 1000.0 * INSTR_TIME_GET_DOUBLE(ji->optimization_counter),
+									 1000.0 * INSTR_TIME_GET_DOUBLE(ji->emission_counter),
+									 1000.0 * INSTR_TIME_GET_DOUBLE(total_time));
+				else
+				{
+					ExplainPropertyInteger("segment id", NULL, ss->segindex0 + j, es);
+					ExplainPropertyFloat("Generation", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->generation_counter),
+										 3, es);
+					ExplainPropertyFloat("Inlining", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->inlining_counter),
+										 3, es);
+					ExplainPropertyFloat("Optimization", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->optimization_counter),
+										 3, es);
+					ExplainPropertyFloat("Emission", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(ji->emission_counter),
+										 3, es);
+					ExplainPropertyFloat("Total", "ms",
+										 1000.0 * INSTR_TIME_GET_DOUBLE(total_time),
+										 3, es);
+				}
+			}
+
+			if (es->format == EXPLAIN_FORMAT_TEXT)
+				appendStringInfo(es->str, "//end\n");
+			else
+				ExplainCloseGroup("Timing", "Timing", true, es);
+		}
+		es->indent -= 1;
+	}
+
+	es->indent -= 1;
+	ExplainCloseGroup("JIT", "JIT", true, es);
 }
