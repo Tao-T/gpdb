@@ -34,6 +34,13 @@ SET jit_above_cost = 100000;
 
 -- this select should not dump execution plan
 SELECT relname FROM pg_class WHERE relname='pg_class';
+-- ignore the variable JIT gucs in Settings
+-- start_matchsubs
+-- m/^Settings:.*/
+-- s/,?\s*jit\w*\s*=\s*[^,\n]+//g
+-- m/^Settings:.*/
+-- s/^Settings:[,\s]*/Settings: /
+-- end_matchsubs
 -- this select should also dump plan, since it takes too much time to run
 SELECT count(*) FROM auto_explain_test.t1, auto_explain_test.t2;
 

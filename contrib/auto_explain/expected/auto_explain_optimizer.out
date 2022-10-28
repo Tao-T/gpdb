@@ -87,6 +87,13 @@ LOG:  statement: SELECT relname FROM pg_class WHERE relname='pg_class';
  pg_class
 (1 row)
 
+-- ignore the variable JIT gucs in Settings
+-- start_matchsubs
+-- m/^Settings:.*/
+-- s/,?\s*jit\w*\s*=\s*[^,\n]+//g
+-- m/^Settings:.*/
+-- s/^Settings:[,\s]*/Settings: /
+-- end_matchsubs
 -- this select should also dump plan, since it takes too much time to run
 SELECT count(*) FROM auto_explain_test.t1, auto_explain_test.t2;
 LOG:  statement: SELECT count(*) FROM auto_explain_test.t1, auto_explain_test.t2;
