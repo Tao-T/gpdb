@@ -744,7 +744,7 @@ struct config_bool ConfigureNamesBool_gp[] =
 			NULL
 		},
 		&gp_explain_jit,
-		false,
+		true,
 		NULL, NULL, NULL
 	},
 
