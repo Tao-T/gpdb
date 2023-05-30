@@ -141,6 +141,7 @@ function _main() {
 	# The WITH_ASSERTIONS state should keep the same between build and test.
 	# Or LLVM_ABI_BREAKING_CHECKS will fail the loading of libllvmjit
 	setup_llvm
+	yum install -y libicu-devel
 
 	generate_build_number
 	build_gpdb "${BLD_TARGET_OPTION[@]}"

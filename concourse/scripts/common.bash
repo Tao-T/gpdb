@@ -150,6 +150,7 @@ function configure() {
 function install_and_configure_gpdb() {
     install_gpdb
     setup_llvm
+	yum install -y libicu-devel pam-devel openldap-devel
     setup_configure_vars
     configure
 }
