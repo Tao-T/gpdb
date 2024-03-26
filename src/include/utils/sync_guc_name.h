@@ -108,6 +108,7 @@
 		"IntervalStyle",
 		"jit",
 		"jit_above_cost",
+		"jit_cache",
 		"jit_debugging_support",
 		"jit_dump_bitcode",
 		"jit_expressions",

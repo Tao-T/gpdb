@@ -33,6 +33,7 @@
 
 /* GUCs */
 bool		jit_enabled = true;
+bool		jit_cache_enabled = true;
 char	   *jit_provider = NULL;
 bool		jit_debugging_support = false;
 bool		jit_dump_bitcode = false;

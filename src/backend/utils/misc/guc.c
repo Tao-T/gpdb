@@ -1963,6 +1963,17 @@ static struct config_bool ConfigureNamesBool[] =
 	},
 
 	{
+		{"jit_cache", PGC_USERSET, QUERY_TUNING_OTHER,
+			gettext_noop("Allow JIT cache."),
+			NULL,
+			GUC_EXPLAIN
+		},
+		&jit_cache_enabled,
+		true,
+		NULL, NULL, NULL
+	},
+
+	{
 		{"jit_debugging_support", PGC_SU_BACKEND, DEVELOPER_OPTIONS,
 			gettext_noop("Register JIT compiled function with debugger."),
 			NULL,

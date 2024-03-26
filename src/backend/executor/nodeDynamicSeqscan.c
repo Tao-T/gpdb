@@ -161,9 +161,13 @@ initNextTableToScan(DynamicSeqScanState *node)
 		node->lastRelOid = *pid;
 		pfree(attMap);
 		/* clean up JIT caches */
-		for (int i = 0; i < JIT_CACHE_N; i++)
+		if (node->jit_caches)
 		{
-			node->jit_caches[i].valid = false;
+			elog(WARNING, "JIT Cache flushed in Dynamic Scan: attmap diff between rel %u %u (i=%d)", lastScannedRel->rd_id, *pid, node->whichPart);
+			for (int i = 0; i < JIT_CACHE_N; i++)
+			{
+				node->jit_caches[i].valid = false;
+			}
 		}
 	}
 
@@ -217,7 +221,7 @@ ExecDynamicSeqScan(PlanState *pstate)
 		node->nOids = list_length(newPartOids);
 	}
 	/* init JIT cache */
-	if (!node->jit_caches)
+	if (jit_cache_enabled && !node->jit_caches)
 	{
 		node->jit_caches = palloc0(sizeof(JitCache) * JIT_CACHE_N);
 		for (int i = 0; i < JIT_CACHE_N; i++)
